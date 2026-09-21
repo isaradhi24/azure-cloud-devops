@@ -1,0 +1,15 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - script: |
+      echo "Azure Cloud DevOps - Terraform Pipeline"
+      echo "Pipeline is running successfully."
+      echo "Repository: $(Build.Repository.Name)"
+      echo "Branch: $(Build.SourceBranchName)"
+    displayName: 'Validate Azure Pipeline'
