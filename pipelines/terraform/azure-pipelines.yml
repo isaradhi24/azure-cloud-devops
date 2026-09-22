@@ -6,10 +6,30 @@ trigger:
 pool:
   vmImage: 'ubuntu-24.04'
 
+variables:
+  terraformWorkingDirectory: 'IaC/environments/dev'
+
 steps:
+  - checkout: self
+
   - script: |
       echo "Azure Cloud DevOps - Terraform Pipeline"
-      echo "Pipeline is running successfully."
       echo "Repository: $(Build.Repository.Name)"
       echo "Branch: $(Build.SourceBranchName)"
-    displayName: 'Validate Azure Pipeline'
+      terraform version
+    displayName: 'Verify Terraform'
+
+  - script: |
+      terraform init -backend=false
+    workingDirectory: '$(terraformWorkingDirectory)'
+    displayName: 'Terraform Init'
+
+  - script: |
+      terraform fmt -check -recursive ../../
+    workingDirectory: '$(terraformWorkingDirectory)'
+    displayName: 'Terraform Format Check'
+
+  - script: |
+      terraform validate
+    workingDirectory: '$(terraformWorkingDirectory)'
+    displayName: 'Terraform Validate'
