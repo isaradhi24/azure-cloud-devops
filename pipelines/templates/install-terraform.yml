@@ -1,0 +1,17 @@
+parameters:
+  - name: terraformVersion
+    type: string
+
+steps:
+  - script: |
+      echo "Installing Terraform ${{ parameters.terraformVersion }}"
+
+      curl -fsSL \
+        https://releases.hashicorp.com/terraform/${{ parameters.terraformVersion }}/terraform_${{ parameters.terraformVersion }}_linux_amd64.zip \
+        -o terraform.zip
+
+      unzip -o terraform.zip
+      sudo mv terraform /usr/local/bin/terraform
+
+      terraform version
+    displayName: 'Install Terraform'

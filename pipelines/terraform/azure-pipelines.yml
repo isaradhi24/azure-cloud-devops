@@ -29,16 +29,9 @@ stages:
     steps:
       - checkout: self
     
-      - script: |
-          echo "Installing Terraform $(terraformVersion)"
-
-          curl -fsSL \
-            https://releases.hashicorp.com/terraform/$(terraformVersion)/terraform_$(terraformVersion)_linux_amd64.zip \
-            -o terraform.zip
-
-          unzip terraform.zip
-          sudo mv terraform /usr/local/bin/terraform
-        displayName: 'Install Terraform'
+      - template: ../templates/install-terraform.yml
+        parameters:
+          terraformVersion: $(terraformVersion)
 
       - script: |
           echo "Azure Cloud DevOps - Terraform Pipeline"
@@ -61,3 +54,46 @@ stages:
           terraform validate
         workingDirectory: '$(terraformWorkingDirectory)'
         displayName: 'Terraform Validate'
+
+# =========================================================
+# STAGE 2 - PLAN
+# =========================================================
+- stage: Plan
+  displayName: 'Terraform Plan Stage'
+  dependsOn: Validate
+  condition: succeeded()
+
+  jobs:
+  - job: TerraformPlan
+    displayName: 'Terraform Plan Job'
+
+    pool:
+      vmImage: 'ubuntu-24.04'
+
+    steps:
+      - checkout: self
+
+      - template: ../templates/install-terraform.yml
+        parameters:
+          terraformVersion: $(terraformVersion)
+      - task: AzureCLI@2
+        displayName: 'Terraform Init and Plan'
+        inputs:
+          azureSubscription: '$(azureServiceConnection)'
+          scriptType: 'bash'
+          scriptLocation: 'inlineScript'
+          workingDirectory: '$(terraformWorkingDirectory)'
+          inlineScript: |
+            echo "Initializing Terraform remote backend"
+
+            terraform init -reconfigure \
+            -backend-config="resource_group_name=$(backendResourceGroup)" \
+            -backend-config="storage_account_name=$(backendStorageAccount)" \
+            -backend-config="container_name=$(backendContainer)" \
+            -backend-config="key=$(backendKey)" \
+            -backend-config="use_azuread_auth=true"
+
+            echo "Running Terraform Plan"
+
+            terraform plan -out=tfplan
+          
